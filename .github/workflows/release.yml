@@ -1,0 +1,48 @@
+name: Release
+
+# Publishing from CI rather than a laptop, because an interactive OTP is a bad
+# gate for something that should be reproducible: the tag is the trigger, and
+# what ships is exactly what CI tested.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for npm provenance — the published package carries a signed
+      # link back to the commit and workflow that built it.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - run: npm test
+
+      # A tag that disagrees with package.json publishes a version nobody asked
+      # for, and npm will not let you take it back.
+      - name: Tag must match package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "Tag v$TAG does not match package.json $PKG" >&2
+            exit 1
+          fi
+
+      # The real check: the package's whole job is producing a working project.
+      - run: node index.js smoke-project
+      - run: npm install
+        working-directory: smoke-project
+      - run: npm run doctor
+        working-directory: smoke-project
+      - run: rm -rf smoke-project
+
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
