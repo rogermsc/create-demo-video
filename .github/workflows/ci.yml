@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # The template is fetched at run time, so this package can break without a
+  # commit of its own — a rename in demokit is enough. Catch that on a schedule
+  # rather than when someone reports it.
+  schedule:
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ["18", "22"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+
+  # The tests check the shape of what gets written. This checks the thing
+  # actually works: scaffold, install, and run the project's own preflight.
+  end-to-end:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node index.js my-tour
+      - run: npm install
+        working-directory: my-tour
+      - run: npm run doctor
+        working-directory: my-tour
+      - name: Render a frame
+        working-directory: my-tour
+        run: npx remotion still Scene-dashboard /tmp/frame.png --frame=200
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scaffolded-frame
+          path: /tmp/frame.png
