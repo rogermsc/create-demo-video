@@ -141,12 +141,14 @@ seeded from \`video.config.example.ts\` on first run. Edit it, not \`src/\`.
 | | |
 |---|---|
 | \`npm run dev\` | Remotion Studio |
+| \`npm run draft "<what your product does>"\` | write a whole config from a paragraph |
 | \`npm run render\` | the whole video → \`out/demo.mp4\` |
 | \`npm run render:vertical\` / \`:square\` | the 9:16 and 1:1 cuts, captions burned in |
+| \`npm run gif\` / \`poster\` | the first 15s as a GIF; one frame as a PNG |
 | \`npm run add <archetype>\` | append a filled-in scene to your config |
 | \`npm run voice\` | speak each scene's narration into \`public/audio/\` |
 | \`npm run narrate\` | measure narration in \`public/audio/\` |
-| \`npm run doctor\` | check assets, contrast and layout capacity |
+| \`npm run doctor\` | check assets, contrast, layout capacity and pacing |
 | \`npm run captions\` | write the WebVTT sidecar |
 | \`npm run translate <lang>\` | the same video in another language |
 | \`npm run smoke\` | render every composition, fail on a blank frame |
