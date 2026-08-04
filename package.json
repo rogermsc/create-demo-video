@@ -1,6 +1,6 @@
 {
   "name": "create-demo-video",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scaffold a demokit project — product demo videos from a config file.",
   "keywords": [
     "demo",
