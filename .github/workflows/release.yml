@@ -12,15 +12,27 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Required for npm provenance — the published package carries a signed
-      # link back to the commit and workflow that built it.
+      # The whole authentication story. npm mints a short-lived credential from
+      # this OIDC token, so there is no long-lived npm token to leak, rotate or
+      # paste into a chat window — and provenance comes free with it, signed
+      # against the commit and workflow that built the tarball.
       id-token: write
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      # v6, not v4: `package-manager-cache` does not exist before it, and an
+      # input the action does not know is an input it ignores.
+      - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
+          # Never cache in a release build: what ships should come from the
+          # lockfile, not from whatever a previous run happened to leave behind.
+          package-manager-cache: false
+
+      # Trusted publishing needs npm >= 11.5.1. Node 24 ships something new
+      # enough today, but a release that silently falls back to "no credentials"
+      # is a bad way to find out that stopped being true.
+      - run: npm install -g npm@latest
 
       - run: npm test
 
@@ -43,6 +55,8 @@ jobs:
         working-directory: smoke-project
       - run: rm -rf smoke-project
 
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # No `NODE_AUTH_TOKEN`, and no `--provenance`: npm detects the OIDC
+      # environment, exchanges the token above for a short-lived credential and
+      # attaches provenance itself. A token here would only put back the thing
+      # this removed.
+      - run: npm publish --access public
